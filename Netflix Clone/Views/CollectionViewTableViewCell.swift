@@ -7,9 +7,15 @@
 
 import UIKit
 
+protocol CollectionViewTableViewDelegate: AnyObject {
+    func collectionViewTableViewDidTapCEll(_ cell: CollectionViewTableViewCell, viewModel: TitlePreviewViewModel)
+}
+
 class CollectionViewTableViewCell: UITableViewCell {
 
     static let identifier = "CollectionViewTableViewCell"
+    
+    weak var delegate: CollectionViewTableViewDelegate?
     
     private var titles: [Title] = [Title]()
     
@@ -74,13 +80,35 @@ extension CollectionViewTableViewCell: UICollectionViewDelegate, UICollectionVie
             return
         }
         
-        APICaller.shared.getMovie(with: titleName + "trailer") { result in
+        APICaller.shared.getMovie(with: titleName + "trailer") { [ weak self ] result in
             switch result {
             case .success(let videoElement):
-                print(videoElement.id)
+                let title = self?.titles[indexPath.row]
+               guard let titleOverview = title?.overview else {
+                    return
+                }
+                let viewModel = TitlePreviewViewModel(title: titleName, youtubeView: videoElement, titleOverview: titleOverview)
+                guard let strongSelf = self else {
+                    return
+                }
+                self?.delegate?.collectionViewTableViewDidTapCEll(strongSelf, viewModel: viewModel)
             case.failure(let error):
                 print(error.localizedDescription)
             }
         }
     }
-}
+    //
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemsAt indexPaths: [IndexPath], point: CGPoint) -> UIContextMenuConfiguration? {
+        let config = UIContextMenuConfiguration(
+        identifier: nil,
+        previewProvider: nil) { _ in
+            let downloadAction = UIAction(title: "Download", subtitle: nil , image: nil ,identifier: nil, discoverabilityTitle: nil, state: .off) { _ in
+                print("Downloaad tapped")
+            }
+            return UIMenu(title: "", image: nil, identifier: nil, options: .displayInline, children: [downloadAction])
+            }
+        return config
+        }
+
+    }
+
