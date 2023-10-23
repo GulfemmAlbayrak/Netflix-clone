@@ -20,5 +20,5 @@ struct Title: Codable {
     let overview: String?
     let vote_count: Int?
     let release_date: String?
-    let vote_arange: Double?
+    let vote_average: Double?
 }
